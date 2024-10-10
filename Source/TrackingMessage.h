@@ -34,17 +34,20 @@
 
 #include <ProcessorHeaders.h>
 
-struct TrackingPosition {
+struct TrackingPosition
+{
     float x;
     float y;
     float width;
     float height;
 };
 
-struct TrackingData {
+struct TrackingData
+{
     uint64 timestamp;
     TrackingPosition position;
-    friend std::ostream &operator<<(std::ostream &stream, const TrackingData &td){
+    friend std::ostream& operator<< (std::ostream& stream, const TrackingData& td)
+    {
         stream << "x: " << td.position.x << std::endl;
         stream << "y: " << td.position.y << std::endl;
         stream << "width: " << td.position.width << std::endl;
@@ -64,7 +67,8 @@ struct TrackingSources
     String name;
     String color;
     bool positionInsideACircle;
-    friend std::ostream &operator<<(std::ostream &stream, const TrackingSources &ts){
+    friend std::ostream& operator<< (std::ostream& stream, const TrackingSources& ts)
+    {
         stream << "name: " << ts.name << std::endl;
         stream << "Color: " << ts.color << std::endl;
         stream << "x: " << ts.x_pos << std::endl;

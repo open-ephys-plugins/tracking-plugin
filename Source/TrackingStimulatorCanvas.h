@@ -32,9 +32,9 @@
 #ifndef TRACKINGSTIMULATORCANVAS_H
 #define TRACKINGSTIMULATORCANVAS_H
 
-#include <VisualizerWindowHeaders.h>
-#include "TrackingNodeEditor.h"
 #include "TrackingNode.h"
+#include "TrackingNodeEditor.h"
+#include <VisualizerWindowHeaders.h>
 
 class DisplayAxes;
 
@@ -44,13 +44,13 @@ class DisplayAxes;
 
 */
 class TrackingStimulatorCanvas : public Visualizer,
-        public Button::Listener,
-        public Label::Listener,
-        public ComboBox::Listener,
-        public KeyListener
+                                 public Button::Listener,
+                                 public Label::Listener,
+                                 public ComboBox::Listener,
+                                 public KeyListener
 {
 public:
-    TrackingStimulatorCanvas(TrackingNode* TrackingNode);
+    TrackingStimulatorCanvas (TrackingNode* TrackingNode);
     ~TrackingStimulatorCanvas();
 
     void paint (Graphics&);
@@ -60,12 +60,12 @@ public:
     void initLabels();
 
     // KeyListener interface
-    bool keyPressed(const KeyPress &key, Component *originatingComponent) override;
+    bool keyPressed (const KeyPress& key, Component* originatingComponent) override;
 
     // Listener interface
-    void buttonClicked(Button* button) override;
-    void labelTextChanged(Label *label) override;
-    void comboBoxChanged(ComboBox* comboBox) override;
+    void buttonClicked (Button* button) override;
+    void labelTextChanged (Label* label) override;
+    void comboBoxChanged (ComboBox* comboBox) override;
 
     // Visualizer interface
     void refreshState() override;
@@ -74,17 +74,17 @@ public:
     void beginAnimation() override;
     void endAnimation() override;
 
-    void saveCustomParametersToXml(XmlElement* xml) override;
-    void loadCustomParametersFromXml(XmlElement* xml) override;
+    void saveCustomParametersToXml (XmlElement* xml) override;
+    void loadCustomParametersFromXml (XmlElement* xml) override;
 
-    void createCircle(float xVal, float yVal, float rad);
-    void selectCircle(int circle);
-    void editSelectedCircle(float xVal, float yVal, float rad);
+    void createCircle (float xVal, float yVal, float rad);
+    void selectCircle (int circle);
+    void editSelectedCircle (float xVal, float yVal, float rad);
     bool getUpdateCircle();
-    void setUpdateCircle(bool onoff);
+    void setUpdateCircle (bool onoff);
     bool areThereCicles();
     void setOnButton();
-    float my_round(float x);
+    float my_round (float x);
     void uploadCircles();
     int getSelectedSource() const;
 
@@ -140,9 +140,8 @@ private:
     std::unique_ptr<CustomTextBox> sdevEditLabel;
     std::unique_ptr<CustomTextBox> durationEditLabel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackingStimulatorCanvas);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TrackingStimulatorCanvas);
 };
-
 
 /**
 
@@ -157,14 +156,13 @@ private:
 class CircleEditor : public Component
 {
 public:
-    CircleEditor(TrackingStimulatorCanvas* stimCanvas, bool isEditMode, float cx, float cy, float cRad);
+    CircleEditor (TrackingStimulatorCanvas* stimCanvas, bool isEditMode, float cx, float cy, float cRad);
 
     ~CircleEditor();
 
-    void paint(Graphics& g) override;
+    void paint (Graphics& g) override;
 
 private:
-
     std::unique_ptr<Slider> cxSlider;
     std::unique_ptr<Slider> cySlider;
     std::unique_ptr<Slider> cradSlider;
@@ -181,16 +179,14 @@ private:
 
     bool isEditMode;
 
-    TrackingStimulatorCanvas *canvas;
+    TrackingStimulatorCanvas* canvas;
 
     void updateCircleParams();
 
     void createNewCircle();
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CircleEditor);
-
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CircleEditor);
 };
-
 
 /**
 
@@ -200,28 +196,26 @@ private:
 class DisplayAxes : public Component
 {
 public:
-    DisplayAxes(TrackingNode* TrackingNode, TrackingStimulatorCanvas* TrackingStimulatorCanvas);
+    DisplayAxes (TrackingNode* TrackingNode, TrackingStimulatorCanvas* TrackingStimulatorCanvas);
     ~DisplayAxes();
 
-    void addPosition(int index, TrackingPosition& position);
+    void addPosition (int index, TrackingPosition& position);
 
-    void paint(Graphics& g);
+    void paint (Graphics& g);
 
     void clear();
 
-    void mouseMove(const MouseEvent& event);
-    void mouseEnter(const MouseEvent& event);
-    void mouseExit(const MouseEvent& event);
-    void mouseDown(const MouseEvent& event);
-    void mouseUp(const MouseEvent& event);
-    void mouseDrag(const MouseEvent& event);
+    void mouseMove (const MouseEvent& event);
+    void mouseEnter (const MouseEvent& event);
+    void mouseExit (const MouseEvent& event);
+    void mouseDown (const MouseEvent& event);
+    void mouseUp (const MouseEvent& event);
+    void mouseDrag (const MouseEvent& event);
 
     void copy();
     void paste();
 
-
 private:
-
     std::vector<TrackingPosition> m_positions[MAX_SOURCES];
 
     std::map<String, Colour> color_palette;
@@ -248,8 +242,7 @@ private:
 
     MouseCursor::StandardCursorType cursorType;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DisplayAxes);
-
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DisplayAxes);
 };
 
 #endif // TRACKINGSTIMULATORCANVAS_H

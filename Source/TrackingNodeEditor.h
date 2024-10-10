@@ -28,44 +28,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <VisualizerEditorHeaders.h>
 
 class TrackingNodeEditor : public VisualizerEditor,
-						   public Button::Listener,
-						   public ComboBox::Listener
+                           public Button::Listener,
+                           public ComboBox::Listener
 {
 public:
-	/** Constructor */
-	TrackingNodeEditor(GenericProcessor *parentNode);
+    /** Constructor */
+    TrackingNodeEditor (GenericProcessor* parentNode);
 
-	/** Destructor */
-	~TrackingNodeEditor() {}
+    /** Destructor */
+    ~TrackingNodeEditor() {}
 
-	Visualizer* createNewCanvas() override;
+    Visualizer* createNewCanvas() override;
 
-	void buttonClicked(Button* button) override;
+    void buttonClicked (Button* button) override;
 
-	void comboBoxChanged(ComboBox* cb) override;
+    void comboBoxChanged (ComboBox* cb) override;
 
-	/** Saves tracking node editor parameters */
-    void saveVisualizerEditorParameters(XmlElement* xml) override;
+    /** Saves tracking node editor parameters */
+    void saveVisualizerEditorParameters (XmlElement* xml) override;
 
     /** Loads tracking node editor parameters */
-    void loadVisualizerEditorParameters(XmlElement* xml) override;
+    void loadVisualizerEditorParameters (XmlElement* xml) override;
 
-	int getSelectedSource() { return selectedSource; }
+    int getSelectedSource() { return selectedSource; }
 
 private:
-	std::unique_ptr<UtilityButton> plusButton;
-	std::unique_ptr<UtilityButton> minusButton;
-	std::unique_ptr<Label> sourceLabel;
-	std::unique_ptr<ComboBox> trackingSourceSelector;
-	std::unique_ptr<Label> stimLabel;
-	std::unique_ptr<TextButton> stimulateButton;
+    std::unique_ptr<UtilityButton> plusButton;
+    std::unique_ptr<UtilityButton> minusButton;
+    std::unique_ptr<Label> sourceLabel;
+    std::unique_ptr<ComboBox> trackingSourceSelector;
+    std::unique_ptr<Label> stimLabel;
+    std::unique_ptr<TextButton> stimulateButton;
 
-	int selectedSource;
+    int selectedSource;
 
-	void updateCustomView() override;
+    void updateCustomView() override;
 
-	/** Generates an assertion if this class leaks */
-	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackingNodeEditor);
+    /** Generates an assertion if this class leaks */
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TrackingNodeEditor);
 };
 
 #endif // TrackingNodeEDITOR_H_DEFINED
