@@ -35,7 +35,8 @@
 
 
 TrackingStimulatorCanvas::TrackingStimulatorCanvas(TrackingNode* node)
-    : processor(node)
+    : Visualizer (node)
+    , processor(node)
     , m_width(1.0)
     , m_height(1.0)
     , m_updateCircle(true)
@@ -45,9 +46,7 @@ TrackingStimulatorCanvas::TrackingStimulatorCanvas(TrackingNode* node)
     , settingsHeight(600)
     , selectedSource(-1)
     , outputChan(0)
-    , labelFont("Fira Sans", "SemiBold", 20.0f)
-    , labelTextColour(Colour(255, 200, 0))
-    , labelBackgroundColour(Colour(100,100,100))
+    , sectionLabelFont ("Inter", "Semi Bold", 18.0f)
 {
     // Setup buttons
     initButtons();
@@ -57,8 +56,8 @@ TrackingStimulatorCanvas::TrackingStimulatorCanvas(TrackingNode* node)
     addKeyListener(this);
     setWantsKeyboardFocus(true);
     
-    displayAxes = new DisplayAxes(node, this);
-    addAndMakeVisible(displayAxes);
+    displayAxes = std::make_unique<DisplayAxes>(node, this);
+    addAndMakeVisible(displayAxes.get());
 
     update();
 }
@@ -70,52 +69,58 @@ TrackingStimulatorCanvas::~TrackingStimulatorCanvas()
 
 void TrackingStimulatorCanvas::initButtons()
 {
+    FontOptions buttonFont = FontOptions(14.0f);
 
-    clearButton = new UtilityButton("Clear plot", Font("Small Text", 13, Font::plain));
+    clearButton = std::make_unique<UtilityButton>("Clear plot");
+    clearButton->setFont(buttonFont);
     clearButton->setRadius(3.0f);
     clearButton->onClick = [this] { clear(); };
     // clearButton->addListener(this);
-    addAndMakeVisible(clearButton);
+    addAndMakeVisible(clearButton.get());
 
-    simTrajectoryButton = new UtilityButton("Simulate", Font("Small Text", 13, Font::plain));
+    simTrajectoryButton = std::make_unique<UtilityButton>("Simulate");
+    simTrajectoryButton->setFont(buttonFont);
     simTrajectoryButton->setRadius(3.0f);
     simTrajectoryButton->addListener(this);
     simTrajectoryButton->setClickingTogglesState(true);
-    addAndMakeVisible(simTrajectoryButton);
+    addAndMakeVisible(simTrajectoryButton.get());
 
-    newButton = new UtilityButton("New", Font("Small Text", 13, Font::plain));
+    newButton = std::make_unique<UtilityButton>("New");
+    newButton->setFont(buttonFont);
     newButton->setRadius(3.0f);
     newButton->addListener(this);
-    addAndMakeVisible(newButton);
+    addAndMakeVisible(newButton.get());
 
-    editButton = new UtilityButton("Edit", Font("Small Text", 13, Font::plain));
+    editButton = std::make_unique<UtilityButton>("Edit");
+    editButton->setFont(buttonFont);
     editButton->setRadius(3.0f);
     editButton->addListener(this);
-    addAndMakeVisible(editButton);
+    addAndMakeVisible(editButton.get());
 
-    delButton = new UtilityButton("Delete", Font("Small Text", 13, Font::plain));
+    delButton = std::make_unique<UtilityButton>("Delete");
+    delButton->setFont(buttonFont);
     delButton->setRadius(3.0f);
     delButton->addListener(this);
-    addAndMakeVisible(delButton);
+    addAndMakeVisible(delButton.get());
 
-    onButton = new TextButton("Disabled");
+    onButton = std::make_unique<TextButton>("Disabled");
     onButton->setClickingTogglesState(true);
     onButton->setToggleState(false, dontSendNotification);
     onButton->setColour(TextButton::buttonOnColourId, Colours::green);
     onButton->setColour(TextButton::buttonColourId, Colours::darkred);
     onButton->setColour(TextButton::textColourOnId, Colours::white);
-    onButton->setColour(TextButton::textColourOffId, Colours::grey);
+    onButton->setColour(TextButton::textColourOffId, Colours::lightgrey);
     onButton->addListener(this);
-    addAndMakeVisible(onButton);
+    addAndMakeVisible(onButton.get());
 
-    availableSources = new ComboBox("Tracking Sources");
+    availableSources = std::make_unique<ComboBox>("Tracking Sources");
     availableSources->setEditableText(false);
     availableSources->setJustificationType(Justification::centredLeft);
     availableSources->addListener(this);
     availableSources->setSelectedId(0);
-    addAndMakeVisible(availableSources);
+    addAndMakeVisible(availableSources.get());
 
-    outputChans = new ComboBox("Output Channels");
+    outputChans = std::make_unique<ComboBox>("Output Channels");
     outputChans->setEditableText(false);
     outputChans->setJustificationType(Justification::centredLeft);
     outputChans->addListener(this);
@@ -125,40 +130,44 @@ void TrackingStimulatorCanvas::initButtons()
         outputChans->addItem(String(i), i);
 
     outputChans->setSelectedId(processor->getOutputChan() + 1, dontSendNotification);
-    addAndMakeVisible(outputChans);
+    addAndMakeVisible(outputChans.get());
 
 
     // Create invisible circle toggle button
     for (int i = 0; i<MAX_CIRCLES; i++)
     {
-        circlesButton[i] = new UtilityButton(String(i+1), Font("Small Text", 13, Font::plain));
+        circlesButton[i] = std::make_unique<UtilityButton>(String(i+1));
+        circlesButton[i]->setFont(buttonFont);
         circlesButton[i]->setRadioGroupId(101);
         circlesButton[i]->setRadius(5.0f);
         circlesButton[i]->addListener(this);
         circlesButton[i]->setClickingTogglesState(true);
-        addAndMakeVisible(circlesButton[i]);
+        addAndMakeVisible(circlesButton[i].get());
     }
 
-    uniformButton = new UtilityButton("uniform", Font("Small Text", 13, Font::plain));
+    uniformButton = std::make_unique<UtilityButton>("Uniform");
+    uniformButton->setFont(buttonFont);
     uniformButton->setRadioGroupId(201);
     uniformButton->setRadius(3.0f);
     uniformButton->addListener(this);
     uniformButton->setClickingTogglesState(true);
-    addAndMakeVisible(uniformButton);
+    addAndMakeVisible(uniformButton.get());
 
-    gaussianButton = new UtilityButton("gaussian", Font("Small Text", 13, Font::plain));
+    gaussianButton = std::make_unique<UtilityButton>("Gaussian");
+    gaussianButton->setFont(buttonFont);
     gaussianButton->setRadioGroupId(201);
     gaussianButton->setRadius(3.0f);
     gaussianButton->addListener(this);
     gaussianButton->setClickingTogglesState(true);
-    addAndMakeVisible(gaussianButton);
+    addAndMakeVisible(gaussianButton.get());
 
-    ttlButton = new UtilityButton("single", Font("Small Text", 13, Font::plain));
+    ttlButton = std::make_unique<UtilityButton>("Single");
+    ttlButton->setFont(buttonFont);
     ttlButton->setRadioGroupId(201);
     ttlButton->setRadius(3.0f);
     ttlButton->addListener(this);
     ttlButton->setClickingTogglesState(true);
-    addAndMakeVisible(ttlButton);
+    addAndMakeVisible(ttlButton.get());
 
     // Update button toggle state with current chan1 parameters
     if (processor->getStimMode() == uniform)
@@ -171,59 +180,50 @@ void TrackingStimulatorCanvas::initButtons()
 
 void TrackingStimulatorCanvas::initLabels()
 {
-    Font paramFont = Font("Fira Sans", "Regular", 16.0f);
+    FontOptions paramFont = FontOptions("Inter", "Regular", 14.0f);
     // Static Labels
-    sourcesLabel = new Label("s_sources", "Input Source");
-    sourcesLabel->setFont(labelFont);
-    addAndMakeVisible(sourcesLabel);
+    sourcesLabel = std::make_unique<Label>("s_sources", "Input Source");
+    sourcesLabel->setFont(sectionLabelFont);
+    addAndMakeVisible(sourcesLabel.get());
 
-    outputLabel = new Label("s_output", "Output Channel");
-    outputLabel->setFont(labelFont);
-    addAndMakeVisible(outputLabel);
+    outputLabel = std::make_unique<Label>("s_output", "Output Line");
+    outputLabel->setFont(sectionLabelFont);
+    addAndMakeVisible(outputLabel.get());
 
-    circlesLabel = new Label("s_circles", "Circles");
-    circlesLabel->setFont(labelFont);
-    addAndMakeVisible(circlesLabel);
+    circlesLabel = std::make_unique<Label>("s_circles", "Circles");
+    circlesLabel->setFont(sectionLabelFont);
+    addAndMakeVisible(circlesLabel.get());
 
-    paramLabel = new Label("s_param", "Trigger parameters");
-    paramLabel->setFont(labelFont);
-    addAndMakeVisible(paramLabel);
+    paramLabel = std::make_unique<Label>("s_param", "Trigger parameters");
+    paramLabel->setFont(sectionLabelFont);
+    addAndMakeVisible(paramLabel.get());
 
-    fmaxLabel = new Label("s_fmax", "FMax [Hz]:");
+    fmaxLabel = std::make_unique<Label>("s_fmax", "FMax [Hz]:");
     fmaxLabel->setFont(paramFont);
-    addAndMakeVisible(fmaxLabel);
+    addAndMakeVisible(fmaxLabel.get());
 
-    sdevLabel = new Label("s_sdev", "SD [%]:");
+    sdevLabel = std::make_unique<Label>("s_sdev", "SD [%]:");
     sdevLabel->setFont(paramFont);
-    addAndMakeVisible(sdevLabel);
+    addAndMakeVisible(sdevLabel.get());
 
-    durationLabel = new Label("s_dur", "Duration [ms]:");
+    durationLabel = std::make_unique<Label>("s_dur", "Duration [ms]:");
     durationLabel->setFont(paramFont);
-    addAndMakeVisible(durationLabel);
+    addAndMakeVisible(durationLabel.get());
 
-    fmaxEditLabel = new Label("fmax", String(processor->getStimFreq()));
-    fmaxEditLabel->setFont(paramFont);
-    fmaxEditLabel->setColour(Label::textColourId, labelTextColour);
-    fmaxEditLabel->setColour(Label::backgroundColourId, labelBackgroundColour);
+    fmaxEditLabel = std::make_unique<CustomTextBox>("fmax", String(processor->getStimFreq()), "0123456789.");
     fmaxEditLabel->setEditable(true);
     fmaxEditLabel->addListener(this);
-    addAndMakeVisible(fmaxEditLabel);
+    addAndMakeVisible(fmaxEditLabel.get());
 
-    sdevEditLabel = new Label("sdev", String(processor->getStimSD()));
-    sdevEditLabel->setFont(paramFont);
-    sdevEditLabel->setColour(Label::textColourId, labelTextColour);
-    sdevEditLabel->setColour(Label::backgroundColourId, labelBackgroundColour);
+    sdevEditLabel = std::make_unique<CustomTextBox>("sdev", String(processor->getStimSD()), "0123456789.");
     sdevEditLabel->setEditable(true);
     sdevEditLabel->addListener(this);
-    addAndMakeVisible(sdevEditLabel);
+    addAndMakeVisible(sdevEditLabel.get());
 
-    durationEditLabel = new Label("sdev", String(processor->getTTLDuration()));
-    durationEditLabel->setFont(paramFont);
-    durationEditLabel->setColour(Label::textColourId, labelTextColour);
-    durationEditLabel->setColour(Label::backgroundColourId, labelBackgroundColour);
+    durationEditLabel = std::make_unique<CustomTextBox>("sdur", String(processor->getTTLDuration()), "0123456789");
     durationEditLabel->setEditable(true);
     durationEditLabel->addListener(this);
-    addAndMakeVisible(durationEditLabel);
+    addAndMakeVisible(durationEditLabel.get());
 
     if (processor->getStimMode() == gauss)
     {
@@ -254,10 +254,10 @@ bool TrackingStimulatorCanvas::areThereCicles()
 
 void TrackingStimulatorCanvas::paint(Graphics& g)
 {
-    g.setColour(Colours::black); // background color
+    g.setColour(findColour (ThemeColours::componentParentBackground)); // background color
     g.fillRect(0, 0, getWidth(), getHeight());
         
-    g.setColour(Colour(125, 125, 125)); //settings menu background color
+    g.setColour(findColour (ThemeColours::componentBackground)); //settings menu background color
     g.fillRoundedRectangle(getWidth() - settingsWidth - 10, 10, settingsWidth, settingsHeight - 20, 7.0f);
 
 	//std::cout << "Setting displayAxes bounds to " << plot_bottom_left_x << ", " << plot_bottom_left_y << ", " << camWidth << ", " << camHeight << std::endl;
@@ -267,17 +267,17 @@ void TrackingStimulatorCanvas::paint(Graphics& g)
 void TrackingStimulatorCanvas::resized()
 {
 
-    if(0.22*getWidth() < 150)
-        settingsWidth = 150;
+    if(0.22*getWidth() < 200)
+        settingsWidth = 200;
     else if(0.22*getWidth() > 300)
         settingsWidth = 300;
     else
         settingsWidth = 0.22*getWidth();
     
-    if(getHeight() < 600)
-        settingsHeight = 600;
-    else if(getHeight() > 800)
-        settingsHeight = 800;
+    if(getHeight() < 550)
+        settingsHeight = 550;
+    else if(getHeight() > 750)
+        settingsHeight = 750;
     else
         settingsHeight = getHeight();
 
@@ -306,21 +306,21 @@ void TrackingStimulatorCanvas::resized()
                            int(camWidth), int(camHeight));
 
     sourcesLabel->setBounds(getWidth() - settingsWidth, 25, settingsWidth - 20, 25);
-    availableSources->setBounds(getWidth() - settingsWidth, 60, settingsWidth - 20, 25);
+    availableSources->setBounds(getWidth() - settingsWidth, 55, settingsWidth - 20, 25);
 
-    outputLabel->setBounds(getWidth() - settingsWidth, 100, settingsWidth, 25);
-    outputChans->setBounds(getWidth() - settingsWidth, 135, settingsWidth - 20, 25);
+    outputLabel->setBounds(getWidth() - settingsWidth, 0.16 * settingsHeight, settingsWidth, 25);
+    outputChans->setBounds(getWidth() - settingsWidth, 0.21 * settingsHeight, settingsWidth - 20, 25);
 
-    circlesLabel->setBounds(getWidth() - settingsWidth, 0.34*settingsHeight, settingsWidth - 20, 25);
-    newButton->setBounds(getWidth() - settingsWidth, 0.39*settingsHeight, settingsWidth / 3 - 5, 30);
-    editButton->setBounds(getWidth() - (2*settingsWidth/3) - 5, 0.39*settingsHeight, settingsWidth / 3 - 5, 30);
-    delButton->setBounds(getWidth() - (settingsWidth / 3) - 10, 0.39*settingsHeight, settingsWidth / 3 - 5, 30);
+    circlesLabel->setBounds(getWidth() - settingsWidth, 0.3*settingsHeight, settingsWidth - 20, 25);
+    newButton->setBounds(getWidth() - settingsWidth, 0.35*settingsHeight, settingsWidth / 3 - 5, 25);
+    editButton->setBounds(getWidth() - (2*settingsWidth/3) - 5, 0.35*settingsHeight, settingsWidth / 3 - 5,25);
+    delButton->setBounds(getWidth() - (settingsWidth / 3) - 10, 0.35*settingsHeight, settingsWidth / 3 - 5, 25);
 
-    onButton->setBounds(getWidth() - (3*settingsWidth/4), 0.52*settingsHeight, settingsWidth/2 - 30, 30);
+    onButton->setBounds(getWidth() - (3*settingsWidth/4), 0.5*settingsHeight, settingsWidth/2 - 30, 25);
 
     for (int i = 0; i<MAX_CIRCLES; i++)
     {
-        circlesButton[i]->setBounds(getWidth() - settingsWidth + i*(settingsWidth - 20)/MAX_CIRCLES, 0.46*settingsHeight,
+        circlesButton[i]->setBounds(getWidth() - settingsWidth + i*(settingsWidth - 20)/MAX_CIRCLES, 0.42*settingsHeight,
                                     (settingsWidth - 20)/MAX_CIRCLES, 25);
 
         if (i<processor->getCircles().size())
@@ -330,28 +330,28 @@ void TrackingStimulatorCanvas::resized()
     }
 
     paramLabel->setBounds(getWidth() - settingsWidth, 0.6*settingsHeight, settingsWidth - 20, 25);
-    uniformButton->setBounds(getWidth() - settingsWidth, 0.65*settingsHeight, settingsWidth / 3 - 5, 30);
-    gaussianButton->setBounds(getWidth() - (2*settingsWidth/3) - 5, 0.65*settingsHeight, settingsWidth / 3 - 5, 30);
-    ttlButton->setBounds(getWidth() - (settingsWidth / 3) - 10, 0.65*settingsHeight, settingsWidth / 3 - 5, 30);
+    uniformButton->setBounds(getWidth() - settingsWidth, 0.65*settingsHeight, settingsWidth / 3 - 5, 25);
+    gaussianButton->setBounds(getWidth() - (2*settingsWidth/3) - 5, 0.65*settingsHeight, settingsWidth / 3 - 5, 25);
+    ttlButton->setBounds(getWidth() - (settingsWidth / 3) - 10, 0.65*settingsHeight, settingsWidth / 3 - 5, 25);
 
-    durationLabel->setBounds(getWidth() - settingsWidth, 0.71*settingsHeight, settingsWidth/2 - 20, 30);
-    durationEditLabel->setBounds(getWidth() - (settingsWidth / 2), 0.71*settingsHeight,settingsWidth/2 - 20, 30);
+    durationLabel->setBounds(getWidth() - settingsWidth, 0.71*settingsHeight, settingsWidth/2 - 20, 25);
+    durationEditLabel->setBounds(getWidth() - (settingsWidth / 2), 0.71*settingsHeight,settingsWidth/2 - 20, 25);
     
-    fmaxLabel->setBounds(getWidth() - settingsWidth, 0.765*settingsHeight, settingsWidth/2 - 20, 30);
-    fmaxEditLabel->setBounds(getWidth() - (settingsWidth / 2), 0.765*settingsHeight, settingsWidth/2 - 20, 30);
+    fmaxLabel->setBounds(getWidth() - settingsWidth, 0.765*settingsHeight, settingsWidth/2 - 20, 25);
+    fmaxEditLabel->setBounds(getWidth() - (settingsWidth / 2), 0.765*settingsHeight, settingsWidth/2 - 20, 25);
     
-    sdevLabel->setBounds(getWidth() - settingsWidth, 0.82*settingsHeight, settingsWidth/2 - 20, 30);
-    sdevEditLabel->setBounds(getWidth() - (settingsWidth / 2), 0.82*settingsHeight, settingsWidth/2 - 20, 30);
+    sdevLabel->setBounds(getWidth() - settingsWidth, 0.82*settingsHeight, settingsWidth/2 - 20, 25);
+    sdevEditLabel->setBounds(getWidth() - (settingsWidth / 2), 0.82*settingsHeight, settingsWidth/2 - 20, 25);
 
-    simTrajectoryButton->setBounds(getWidth() - settingsWidth, settingsHeight - 50, settingsWidth/2 - 20, 30);
-    clearButton->setBounds(getWidth() - (settingsWidth / 2), settingsHeight - 50, settingsWidth/2 - 20, 30);
+    simTrajectoryButton->setBounds(getWidth() - settingsWidth, settingsHeight - 50, settingsWidth/2 - 20, 25);
+    clearButton->setBounds(getWidth() - (settingsWidth / 2), settingsHeight - 50, settingsWidth/2 - 20, 25);
 
     refresh();
 }
 
 void TrackingStimulatorCanvas::comboBoxChanged(ComboBox* comboBox)
 {
-    if (comboBox == availableSources)
+    if (comboBox == availableSources.get())
     {
         if (comboBox->getSelectedId() > 1)
         {
@@ -362,7 +362,7 @@ void TrackingStimulatorCanvas::comboBoxChanged(ComboBox* comboBox)
             selectedSource = -1;
         processor->setSelectedStimSource(selectedSource);
     }
-    else if (comboBox == outputChans)
+    else if (comboBox == outputChans.get())
     {
         if (comboBox->getSelectedId() > 0)
         {
@@ -409,11 +409,11 @@ bool TrackingStimulatorCanvas::keyPressed(const KeyPress &key, Component *origin
 
 void TrackingStimulatorCanvas::buttonClicked(Button* button)
 {
-    if (button == clearButton)
+    if (button == clearButton.get())
     {
         clear();
     }
-    else if (button == simTrajectoryButton)
+    else if (button == simTrajectoryButton.get())
     {
         if (simTrajectoryButton->getToggleState() == true)
         {
@@ -424,7 +424,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
         else
             processor->setSimulateTrajectory(false);
     }
-    else if (button == newButton)
+    else if (button == newButton.get())
     {
         
         float cx, cy, crad;
@@ -452,7 +452,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
         myBox.setDismissalMouseClicksAreAlwaysConsumed(true);
 
     }
-    else if (button == editButton)
+    else if (button == editButton.get())
     {
         if(processor->getSelectedCircle() >= 0)
         {
@@ -473,7 +473,6 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
         {
             Label* warningLabel = new Label("warning", "Please select a circle first!");
             warningLabel->setSize(130, 60);
-            warningLabel->setColour(Label::textColourId, Colours::white);
             warningLabel->setJustificationType(Justification::centred);
 
             CallOutBox& myBox = CallOutBox::launchAsynchronously (
@@ -485,7 +484,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
             
         }
     }
-    else if (button == delButton)
+    else if (button == delButton.get())
     {
         if(processor->getSelectedCircle() >= 0)
         {
@@ -513,7 +512,6 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
         {
             Label* warningLabel = new Label("warning", "Please select a circle first!");
             warningLabel->setSize(130, 60);
-            warningLabel->setColour(Label::textColourId, Colours::white);
             warningLabel->setJustificationType(Justification::centred);
 
             CallOutBox& myBox = CallOutBox::launchAsynchronously (
@@ -525,7 +523,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
         }
 
     }
-    else if (button == onButton)
+    else if (button == onButton.get())
     {
         // make changes immediately if circle already exist
         if (processor->getSelectedCircle() != -1)
@@ -549,7 +547,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
             m_onoff = false;
         }
     }
-    else if (button == uniformButton)
+    else if (button == uniformButton.get())
     {
         if (button->getToggleState()==true)
         {
@@ -560,7 +558,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
             processor->setStimMode(uniform);
         }
     }
-    else if (button == gaussianButton)
+    else if (button == gaussianButton.get())
     {
         if (button->getToggleState()==true)
         {
@@ -571,7 +569,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
             processor->setStimMode(gauss);
         }
     }
-    else if (button == ttlButton)
+    else if (button == ttlButton.get())
     {
         if (button->getToggleState()==true)
         {
@@ -588,7 +586,7 @@ void TrackingStimulatorCanvas::buttonClicked(Button* button)
         bool someToggled = false;
         for (int i = 0; i<MAX_CIRCLES; i++)
         {
-            if (button == circlesButton[i] && circlesButton[i]->getEnabledState() )
+            if (button == circlesButton[i].get() && circlesButton[i]->getEnabledState() )
             {
                 // toggle button and untoggle all the others + update
                 if (button->getToggleState()==true)
@@ -633,7 +631,7 @@ void TrackingStimulatorCanvas::uploadCircles()
 
 void TrackingStimulatorCanvas::labelTextChanged(Label *label)
 {
-    if (label == fmaxEditLabel)
+    if (label == fmaxEditLabel.get())
     {
         Value val = label->getTextValue();
         if ((float(val.getValue())>=0 && float(val.getValue())<=10000))
@@ -644,7 +642,7 @@ void TrackingStimulatorCanvas::labelTextChanged(Label *label)
             label->setText("", dontSendNotification);
         }
     }
-    if (label == sdevEditLabel)
+    if (label == sdevEditLabel.get())
     {
         Value val = label->getTextValue();
         if ((float(val.getValue())>=0 && float(val.getValue())<=1))
@@ -658,7 +656,7 @@ void TrackingStimulatorCanvas::labelTextChanged(Label *label)
             label->setText("", dontSendNotification);
         }
     }
-    if (label == durationEditLabel)
+    if (label == durationEditLabel.get())
     {
         Value val = label->getTextValue();
         if (int(val.getValue())>=0)
@@ -676,7 +674,7 @@ void TrackingStimulatorCanvas::refreshState()
 {
 }
 
-void TrackingStimulatorCanvas::update()
+void TrackingStimulatorCanvas::updateSettings()
 {
     availableSources->clear();
     int nSources = processor->getNumSources();
@@ -897,24 +895,14 @@ CircleEditor::CircleEditor(TrackingStimulatorCanvas* stimCanvas, bool isEditMode
     , yVal(cy)
     , radius(cRad)
 {
-    sliderLAF = std::make_unique<LookAndFeel_V4>();
-    sliderLAF->setColour(Slider::textBoxBackgroundColourId, Colours::lightgrey);
-    sliderLAF->setColour(Slider::textBoxTextColourId, Colours::black);
-    sliderLAF->setColour(Slider::textBoxHighlightColourId, Colours::darkgrey);
-    sliderLAF->setColour(Slider::trackColourId, Colours::grey);
-    sliderLAF->setColour(Slider::thumbColourId, Colours::yellow);
-    sliderLAF->setColour(Slider::backgroundColourId, Colours::black);
-
-    Font labelFont = Font("Fira Sans", "SemiBold", 16.0f);
+    FontOptions labelFont = FontOptions("Inter", "Semi Bold", 16.0f);
 
     cxLabel = std::make_unique<Label>("CX", "X [%] :");
     cxLabel->setFont(labelFont);
-    cxLabel->setColour(Label::textColourId, Colours::lightgrey);
     cxLabel->setBounds(10, 10, 55, 30);
     addAndMakeVisible(cxLabel.get());
 
     cxSlider = std::make_unique<Slider>("CXSlider");
-    cxSlider->setLookAndFeel(sliderLAF.get());
     cxSlider->setSliderStyle(Slider::LinearHorizontal);
     cxSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 40, 25);
     cxSlider->setRange(0, 100, 1);
@@ -924,12 +912,10 @@ CircleEditor::CircleEditor(TrackingStimulatorCanvas* stimCanvas, bool isEditMode
 
     cyLabel = std::make_unique<Label>("CY", "Y [%] :");
     cyLabel->setFont(labelFont);
-    cyLabel->setColour(Label::textColourId, Colours::lightgrey);
     cyLabel->setBounds(10, 50, 55, 30);
     addAndMakeVisible(cyLabel.get());
 
     cySlider = std::make_unique<Slider>("CYSlider");
-    cySlider->setLookAndFeel(sliderLAF.get());
     cySlider->setSliderStyle(Slider::LinearHorizontal);
     cySlider->setTextBoxStyle(Slider::TextBoxLeft, false, 40, 25);
     cySlider->setRange(0, 100, 1);
@@ -939,12 +925,10 @@ CircleEditor::CircleEditor(TrackingStimulatorCanvas* stimCanvas, bool isEditMode
 
     cradLabel = std::make_unique<Label>("CRAD", "Rad [%] :");
     cradLabel->setFont(labelFont);
-    cradLabel->setColour(Label::textColourId, Colours::lightgrey);
     cradLabel->setBounds(10, 90, 55, 30);
     addAndMakeVisible(cradLabel.get());
 
     cradSlider = std::make_unique<Slider>("CRadSlider");
-    cradSlider->setLookAndFeel(sliderLAF.get());
     cradSlider->setSliderStyle(Slider::LinearHorizontal);
     cradSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 40, 25);
     cradSlider->setRange(1, 100, 1);
@@ -963,8 +947,6 @@ CircleEditor::CircleEditor(TrackingStimulatorCanvas* stimCanvas, bool isEditMode
     {
         createButton = std::make_unique<TextButton>("Create");
         createButton->setButtonText("Create");
-        createButton->setColour(TextButton::buttonColourId, Colours::green);
-        createButton->setColour(TextButton::textColourOffId , Colours::white);
         createButton->setBounds(85, 140, 70, 30);
         addAndMakeVisible(createButton.get());
         createButton->onClick = [this] { createNewCircle(); };
@@ -975,9 +957,11 @@ CircleEditor::CircleEditor(TrackingStimulatorCanvas* stimCanvas, bool isEditMode
 
 CircleEditor::~CircleEditor()
 {
-    cxSlider->setLookAndFeel(nullptr);
-    cySlider->setLookAndFeel(nullptr);
-    cradSlider->setLookAndFeel(nullptr);
+}
+
+void CircleEditor::paint(Graphics& g)
+{
+    g.fillAll(findColour (ThemeColours::componentBackground));
 }
 
 void CircleEditor::updateCircleParams()

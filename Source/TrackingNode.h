@@ -236,6 +236,9 @@ public:
 	/** The class destructor, used to deallocate memory */
 	~TrackingNode() {}
 
+	/** Registers the parameters of the processor */
+	void registerParameters() override;
+
 	/** If the processor has a custom editor, this method must be defined to instantiate it. */
 	AudioProcessorEditor *createEditor() override;
 
@@ -323,7 +326,7 @@ public:
     /** Returns the circle number if postion is whithin a circle */
 	int isPositionWithinCircles(float x, float y);
 	
-	StringArray colors = { "red",
+	Array<String> colors = { "red",
 							 "green",
 							 "blue",
 							 "magenta",

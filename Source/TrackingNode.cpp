@@ -62,14 +62,19 @@ TrackingNode::TrackingNode()
     , m_stimSD(DEF_SD)
     , messageReceived(false)
 {
-    addIntParameter(Parameter::GLOBAL_SCOPE, "Port", "Tracking source OSC port", DEF_PORT, 1024, 49151);
+}
 
-    addStringParameter(Parameter::GLOBAL_SCOPE, "Address", "Tracking source OSC address", DEF_ADDRESS);
+void TrackingNode::registerParameters()
+{
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "Port", "Port", "Tracking source OSC port", DEF_PORT, 1024, 49151);
 
-    addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Color", "Path color to be displayed",
+    addStringParameter(Parameter::PROCESSOR_SCOPE, "Address", "Address", "Tracking source OSC address", DEF_ADDRESS);
+
+    addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "Color", "Color", "Path color to be displayed",
                             colors,
                             0);
 
+    addBooleanParameter (Parameter::PROCESSOR_SCOPE, "StimOn", "Stim", "Toggle stimulation", true);
 }
 
 AudioProcessorEditor *TrackingNode::createEditor()
@@ -353,6 +358,14 @@ void TrackingNode::parameterValueChanged(Parameter *param)
         int colorIndex = static_cast<CategoricalParameter*>(param)->getSelectedIndex();
         setColor(trackingEditor->getSelectedSource(), colors[colorIndex]);
     }
+    else if(param->getName().equalsIgnoreCase("StimOn"))
+    {
+        bool stimOn = static_cast<BooleanParameter*>(param)->getBoolValue();
+        if (stimOn)
+            startStimulation();
+        else
+            stopStimulation();
+    }
 }
 
 void TrackingNode::updateSettings()
@@ -373,7 +386,7 @@ void TrackingNode::updateSettings()
         ttlChan = new EventChannel(ttlChanSettings);
 
         eventChannels.add(ttlChan);
-        eventChannels.getLast()->addProcessor(processorInfo.get());
+        eventChannels.getLast()->addProcessor(this);
         settings[stream->getStreamId()]->eventChannelPtr = eventChannels.getLast();
     }
 
@@ -548,7 +561,7 @@ void TrackingNode::receiveMessage(int port, String address, const TrackingData &
 
         if (CoreServices::getAcquisitionStatus())
         {
-            int64 ts = CoreServices::getSoftwareTimestamp();
+            int64 ts = CoreServices::getSystemTime();
 
             TrackingData outputMessage = message;
             outputMessage.timestamp = ts;

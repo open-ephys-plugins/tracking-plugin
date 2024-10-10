@@ -30,9 +30,8 @@ TrackingNodeEditor::TrackingNodeEditor(GenericProcessor *parentNode)
 {
     desiredWidth = 250;
 
-    sourceLabel = std::make_unique<Label>("Source Label", "SOURCE");
-    sourceLabel->setFont(Font("Silkscreen", "Bold", 12.0f));
-    sourceLabel->setColour(Label::textColourId, Colours::darkgrey);
+    sourceLabel = std::make_unique<Label>("Source Label", "Source");
+    sourceLabel->setFont(FontOptions("Inter", "Regular", 12.0f));
     sourceLabel->setBounds(35, 24, 60, 20);
     addAndMakeVisible(sourceLabel.get());
 
@@ -41,37 +40,32 @@ TrackingNodeEditor::TrackingNodeEditor(GenericProcessor *parentNode)
     trackingSourceSelector->addListener(this);
     addAndMakeVisible(trackingSourceSelector.get());
 
-    plusButton = std::make_unique<UtilityButton>("+", titleFont);
+    plusButton = std::make_unique<UtilityButton>("+");
     plusButton->addListener(this);
     plusButton->setRadius(3.0f);
     plusButton->setBounds(130, 45, 20, 20);
     addAndMakeVisible(plusButton.get());
 
-    minusButton = std::make_unique<UtilityButton>("-", titleFont);
+    minusButton = std::make_unique<UtilityButton>("-");
     minusButton->addListener(this);
     minusButton->setRadius(3.0f);
     minusButton->setBounds(10, 45, 20, 20);
     addAndMakeVisible(minusButton.get());
 
-    addTextBoxParameterEditor("Address", 165, 75);
-    addTextBoxParameterEditor("Port", 165, 25);
-    addComboBoxParameterEditor("Color", 70, 75);
+    addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Port", 165, 25);
+    addComboBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Color", 70, 75);
+    addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Address", 165, 75);
+    addToggleParameterEditor(Parameter::PROCESSOR_SCOPE, "StimOn", 15, 75);
 
-     // Stimulate (toggle)
-    stimLabel = std::make_unique<Label>("Stim Label", "STIM");
-    stimLabel->setFont(Font("Silkscreen", "Bold", 12.0f));
-    stimLabel->setColour(Label::textColourId, Colours::darkgrey);
-    stimLabel->setBounds(15, 75, 40, 20);
-    addAndMakeVisible(stimLabel.get());
+    for (auto ed : parameterEditors)
+    {
+        ed->setLayout (ParameterEditor::Layout::nameOnTop);
 
-    stimulateButton = std::make_unique<TextButton>("Stimulate Button");
-    stimulateButton->setBounds(15, 95, 40, 20);
-    stimulateButton->addListener(this);
-    stimulateButton->setClickingTogglesState(true); // makes the button toggle its state when clicked
-    stimulateButton->setColour(TextButton::buttonOnColourId, Colours::yellow);
-    stimulateButton->setToggleState(true, dontSendNotification);
-    stimulateButton->setButtonText("ON");
-    addAndMakeVisible(stimulateButton.get()); // makes the button a child component of the editor and makes it visible
+        if (ed->getParameterName() == "StimOn")
+            ed->setSize (40, 36);
+        else
+            ed->setSize (80, 36);
+    }
 }
 
 Visualizer* TrackingNodeEditor::createNewCanvas()
@@ -125,19 +119,6 @@ void TrackingNodeEditor::buttonClicked(Button *btn)
             canvas->update();
 
     }
-    else if (btn == stimulateButton.get())
-    {
-        if (stimulateButton->getToggleState()==true)
-        {
-            processor->startStimulation();
-            stimulateButton->setButtonText(String("ON"));
-        }
-        else
-        {
-            processor->stopStimulation();
-            stimulateButton->setButtonText(String("OFF"));
-        }
-    }
 }
 
 void TrackingNodeEditor::comboBoxChanged(ComboBox* c)
@@ -164,9 +145,6 @@ void TrackingNodeEditor::saveVisualizerEditorParameters(XmlElement* xml)
         source->setAttribute ("color", processor->getColor(i));
         mainNode->addChildElement(source);
     }
-
-    XmlElement* stimElement = xml->createNewChildElement ("STIMULATION");
-    stimElement->setAttribute("status", stimulateButton->getToggleState());
 }
 
 void TrackingNodeEditor::loadVisualizerEditorParameters(XmlElement* xml)
@@ -203,9 +181,6 @@ void TrackingNodeEditor::loadVisualizerEditorParameters(XmlElement* xml)
         if(canvas)
             canvas->update();
     }
-
-    XmlElement* stimElement = xml->getChildByName ("STIMULATION");
-    stimulateButton->setToggleState(stimElement->getBoolAttribute("status"), sendNotification);
 }
 
 void TrackingNodeEditor::updateCustomView()
@@ -236,5 +211,8 @@ void TrackingNodeEditor::updateCustomView()
 
     colorParam->currentValue = processor->colors.indexOf(color);
 
-    updateView();
+    for (auto ed : parameterEditors)
+    {
+        ed->updateView();
+    }
 }

@@ -69,7 +69,7 @@ public:
 
     // Visualizer interface
     void refreshState() override;
-    void update() override;
+    void updateSettings() override;
     void refresh() override;
     void beginAnimation() override;
     void endAnimation() override;
@@ -108,39 +108,37 @@ private:
     int selectedSource;
     int outputChan;
 
-    Font labelFont;
-    Colour labelTextColour;
-    Colour labelBackgroundColour;
+    FontOptions sectionLabelFont;
 
-    ScopedPointer<DisplayAxes> displayAxes;
-    ScopedPointer<UtilityButton> clearButton;
-    ScopedPointer<UtilityButton> newButton;
-    ScopedPointer<UtilityButton> editButton;
-    ScopedPointer<UtilityButton> delButton;
-    ScopedPointer<TextButton> onButton;
-    ScopedPointer<UtilityButton> circlesButton[MAX_CIRCLES];
-    ScopedPointer<UtilityButton> uniformButton;
-    ScopedPointer<UtilityButton> gaussianButton;
-    ScopedPointer<UtilityButton> ttlButton;
+    std::unique_ptr<DisplayAxes> displayAxes;
+    std::unique_ptr<UtilityButton> clearButton;
+    std::unique_ptr<UtilityButton> newButton;
+    std::unique_ptr<UtilityButton> editButton;
+    std::unique_ptr<UtilityButton> delButton;
+    std::unique_ptr<TextButton> onButton;
+    std::unique_ptr<UtilityButton> circlesButton[MAX_CIRCLES];
+    std::unique_ptr<UtilityButton> uniformButton;
+    std::unique_ptr<UtilityButton> gaussianButton;
+    std::unique_ptr<UtilityButton> ttlButton;
 
-    ScopedPointer<ComboBox> availableSources;
-    ScopedPointer<ComboBox> outputChans;
+    std::unique_ptr<ComboBox> availableSources;
+    std::unique_ptr<ComboBox> outputChans;
 
-    ScopedPointer<UtilityButton> simTrajectoryButton;
+    std::unique_ptr<UtilityButton> simTrajectoryButton;
 
     // Label with non-editable text
-    ScopedPointer<Label> sourcesLabel;
-    ScopedPointer<Label> outputLabel;
-    ScopedPointer<Label> circlesLabel;
-    ScopedPointer<Label> paramLabel;
-    ScopedPointer<Label> onLabel;
-    ScopedPointer<Label> fmaxLabel;
-    ScopedPointer<Label> sdevLabel;
-    ScopedPointer<Label> durationLabel;
+    std::unique_ptr<Label> sourcesLabel;
+    std::unique_ptr<Label> outputLabel;
+    std::unique_ptr<Label> circlesLabel;
+    std::unique_ptr<Label> paramLabel;
+    std::unique_ptr<Label> onLabel;
+    std::unique_ptr<Label> fmaxLabel;
+    std::unique_ptr<Label> sdevLabel;
+    std::unique_ptr<Label> durationLabel;
 
-    ScopedPointer<Label> fmaxEditLabel;
-    ScopedPointer<Label> sdevEditLabel;
-    ScopedPointer<Label> durationEditLabel;
+    std::unique_ptr<CustomTextBox> fmaxEditLabel;
+    std::unique_ptr<CustomTextBox> sdevEditLabel;
+    std::unique_ptr<CustomTextBox> durationEditLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(TrackingStimulatorCanvas);
 };
@@ -163,6 +161,8 @@ public:
 
     ~CircleEditor();
 
+    void paint(Graphics& g) override;
+
 private:
 
     std::unique_ptr<Slider> cxSlider;
@@ -174,8 +174,6 @@ private:
     std::unique_ptr<Label> cradLabel;
 
     std::unique_ptr<TextButton> createButton;
-
-    std::unique_ptr<LookAndFeel_V4> sliderLAF;
 
     float xVal;
     float yVal;
