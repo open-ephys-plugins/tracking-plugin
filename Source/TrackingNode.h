@@ -26,12 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "TrackingMessage.h"
 #include <ProcessorHeaders.h>
 
-#include "oscpack/ip/IpEndpointName.h"
-#include "oscpack/ip/UdpSocket.h"
-#include "oscpack/osc/OscOutboundPacketStream.h"
-#include "oscpack/osc/OscPacketListener.h"
-#include "oscpack/osc/OscReceivedElements.h"
-
 #include <queue>
 #include <random>
 #include <stdio.h>
@@ -79,59 +73,18 @@ private:
     int _count = 0;
 };
 
-//	This helper class is an OSC server running its own thread to keep data transmission
-//	continuous.
+//	This helper class is an OSC Receiver running its own thread with RealtimeCallback.
 
 class TrackingNode;
 
-class TrackingServer : public osc::OscPacketListener,
-                       public Thread
+class TrackingModule : private OSCReceiver, private OSCReceiver::ListenerWithOSCAddress<OSCReceiver::RealtimeCallback>
 {
 public:
-    TrackingServer();
-    TrackingServer (int port, String address, TrackingNode* processor);
-    ~TrackingServer();
-
-    void run();
-    void stop();
-
-    bool isBoundAndRunning();
-
-protected:
-    virtual void ProcessMessage (const osc::ReceivedMessage& m, const IpEndpointName&);
-
-private:
-    TrackingServer (TrackingServer const&);
-    void operator= (TrackingServer const&);
-
-    int m_incomingPort;
-    String m_address;
-
-    std::unique_ptr<UdpListeningReceiveSocket> m_listeningSocket;
-    TrackingNode* m_processor;
-};
-
-class TrackingModule
-{
-public:
-    TrackingModule() {}
-    TrackingModule (String name, int port, String address, String color, TrackingNode* processor)
-        : m_name (name), m_port (port), m_address (address), m_color (color)
-    {
-        source.color = color;
-        source.name = name;
-        source.x_pos = -1;
-        source.y_pos = -1;
-        source.width = -1;
-        source.height = -1;
-        source.positionInsideACircle = false;
-        m_messageQueue = std::make_unique<TrackingQueue>();
-        m_server = std::make_unique<TrackingServer> (port, address, processor);
-        // m_server->addProcessor(processor);
-        m_server->startThread();
-    }
+    TrackingModule (String name, int port, String address, String color, TrackingNode* processor);
 
     ~TrackingModule() {}
+
+    void oscMessageReceived (const OSCMessage& message) override;
 
     friend std::ostream& operator<< (std::ostream&, const TrackingModule&);
 
@@ -140,10 +93,13 @@ public:
     String m_address = String (DEF_ADDRESS);
     String m_color = String (DEF_COLOR);
 
+    bool isConnected = false;
+
     std::unique_ptr<TrackingQueue> m_messageQueue;
-    std::unique_ptr<TrackingServer> m_server;
 
     std::vector<TrackingPosition> positionData;
+
+    TrackingNode* m_processor;
 
     TrackingSources source;
 

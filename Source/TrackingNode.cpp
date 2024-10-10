@@ -90,7 +90,7 @@ bool TrackingNode::addSource (String srcName, int port, String address, String c
     LOGD ("Adding tacking module...");
     auto* tm = new TrackingModule (srcName, port, address, color, this);
 
-    if (tm->m_server->isBoundAndRunning())
+    if (tm->isConnected)
     {
         trackers.add (tm);
         LOGD ("Added tracking module!");
@@ -129,7 +129,7 @@ void TrackingNode::setPort (int i, int port)
     }
     catch (const std::runtime_error& e)
     {
-        std::cout << "Set port: " << e.what() << std::endl;
+        LOGE ("Set port: ", e.what());
     }
 }
 
@@ -152,8 +152,20 @@ void TrackingNode::setAddress (int i, String address)
         return;
     }
 
-    trackers[i]->m_address = address;
-    LOGC ("Set address to ", address, " for ", trackers[i]->m_name);
+    int port = trackers[i]->m_port;
+    String color = trackers[i]->m_color;
+    String name = trackers[i]->source.name;
+
+    try
+    {
+        auto module = new TrackingModule (name, port, address, color, this);
+        trackers.set (i, module, true);
+        LOGC ("Set address to ", address, " for ", trackers[i]->m_name);
+    }
+    catch (const std::runtime_error& e)
+    {
+        LOGE ("Set address: ", e.what());
+    }
 }
 
 String TrackingNode::getAddress (int i)
@@ -503,7 +515,7 @@ void TrackingNode::process (AudioBuffer<float>& buffer)
                 float randomNumber = distribution (generator);
 
                 if (stimulationProbability > 1)
-                    std::cout << "WARNING: The tracking stimulation frequency is higher than the sampling frequency." << std::endl;
+                    LOGC ("WARNING: The tracking stimulation frequency is higher than the sampling frequency.");
 
                 if (randomNumber < stimulationProbability)
                 {
@@ -636,122 +648,67 @@ int TrackingQueue::count()
     return _count;
 }
 
-// Class TrackingServer methods
-TrackingServer::TrackingServer()
-    : Thread ("OscListener Thread"), m_incomingPort (0), m_address ("")
+TrackingModule::TrackingModule (String name, int port, String address, String color, TrackingNode* processor)
+    : m_name (name), m_port (port), m_address (address), m_color (color), m_processor (processor)
 {
-}
+    source.color = color;
+    source.name = name;
+    source.x_pos = -1;
+    source.y_pos = -1;
+    source.width = -1;
+    source.height = -1;
+    source.positionInsideACircle = false;
+    m_messageQueue = std::make_unique<TrackingQueue>();
 
-TrackingServer::TrackingServer (int port, String address, TrackingNode* processor)
-    : Thread ("OscListener Thread"), m_incomingPort (port), m_address (address), m_processor (processor)
-{
+    if (! connect (port))
+    {
+        LOGE ("Failed to connect to port ", port);
+        return;
+    }
+
     LOGC ("Creating OSC server on port ", port, " with address ", address);
 
-    try
-    {
-        m_listeningSocket = std::make_unique<UdpListeningReceiveSocket> (IpEndpointName ("localhost", m_incomingPort), this);
-        CoreServices::sendStatusMessage ("OSC Server started!");
-    }
-    catch (const std::exception& e)
-    {
-        CoreServices::sendStatusMessage ("OSC Server failed to start!");
-        LOGC ("Exception in creating TrackingServer(): ", String (e.what()));
-    }
+    isConnected = true;
+    addListener (this, m_address);
 }
 
-TrackingServer::~TrackingServer()
+void TrackingModule::oscMessageReceived (const OSCMessage& message)
 {
-    // stop the OSC Listener thread running
-    stop();
-    stopThread (-1);
-    waitForThreadToExit (-1);
-}
+    //std::cout << "Received message: " << message.getAddressPattern() << std::endl;
 
-void TrackingServer::ProcessMessage (const osc::ReceivedMessage& receivedMessage,
-                                     const IpEndpointName&)
-{
-    //std::cout << "Received message: " << receivedMessage.AddressPattern() << std::endl;
-
-    try
+    if (message.getAddressPattern() == OSCAddressPattern (m_address))
     {
         uint32 argumentCount = 4;
 
-        if (receivedMessage.ArgumentCount() != argumentCount)
+        if (message.size() != argumentCount)
         {
-            LOGC ("ERROR: TrackingServer received message with wrong number of arguments. ",
+            LOGE ("TrackingServer received message with wrong number of arguments. ",
                   "Expected ",
                   argumentCount,
                   ", got ",
-                  receivedMessage.ArgumentCount());
+                  message.size());
+
             return;
         }
 
-        for (uint32 i = 0; i < receivedMessage.ArgumentCount(); i++)
+        for (uint32 i = 0; i < message.size(); i++)
         {
-            if (receivedMessage.TypeTags()[i] != 'f')
+            if (! message[i].isFloat32())
             {
-                LOGC ("TrackingServer only support 'f' (floats), not '", String (receivedMessage.TypeTags()[i]));
+                LOGC ("TrackingServer only support floats, not '", String (message[i].getType()));
                 return;
             }
         }
 
-        osc::ReceivedMessageArgumentStream args = receivedMessage.ArgumentStream();
-
         TrackingData trackingData;
 
-        // Arguments:
-        args >> trackingData.position.x; // 0 - x
-        args >> trackingData.position.y; // 1 - y
-        args >> trackingData.position.width; // 2 - box width
-        args >> trackingData.position.height; // 3 - box height
-        args >> osc::EndMessage;
+        trackingData.position.x = message[0].getFloat32();
+        trackingData.position.y = message[1].getFloat32();
+        trackingData.position.width = message[2].getFloat32();
+        trackingData.position.height = message[3].getFloat32();
 
-        //std::cout << "Message contents: " << trackingData.position.x << ", " <<
-        //    trackingData.position.y << ", " <<
-        //    trackingData.position.width << ", " <<
-        //   trackingData.position.height << std::endl;
-
-        if (std::strcmp (receivedMessage.AddressPattern(), m_address.toStdString().c_str()) != 0)
-        {
-            //LOGC("Address pattern mismatch; got ", receivedMessage.AddressPattern(), " expected ", m_address.toStdString().c_str());
-            return;
-        }
-        // add trackingmodule to receive message call: processor->receiveMessage (m_incomingPort, m_address, trackingData);
-        m_processor->receiveMessage (m_incomingPort, m_address, trackingData);
+        m_processor->receiveMessage (m_port, m_address, trackingData);
     }
-    catch (osc::Exception& e)
-    {
-        // any parsing errors such as unexpected argument types, or
-        // missing arguments get thrown as exceptions.
-        LOGC ("error while parsing message: ", String (receivedMessage.AddressPattern()), ": ", String (e.what()));
-    }
-}
-
-void TrackingServer::run()
-{
-    sleep (1000);
-    if (m_listeningSocket != nullptr)
-        m_listeningSocket->Run();
-}
-
-void TrackingServer::stop()
-{
-    // Stop the oscpack OSC Listener Thread
-    if (! isThreadRunning())
-    {
-        return;
-    }
-
-    if (m_listeningSocket != nullptr)
-        m_listeningSocket->AsynchronousBreak();
-}
-
-bool TrackingServer::isBoundAndRunning()
-{
-    if (m_listeningSocket != nullptr)
-        return m_listeningSocket->IsBound();
-    else
-        return false;
 }
 
 // StimArea methods
@@ -837,6 +794,8 @@ bool StimCircle::isPositionIn (float x, float y)
         return true;
     else
         return false;
+
+    // check if the point is inside the circle
 }
 
 float StimCircle::distanceFromCenter (float x, float y)
