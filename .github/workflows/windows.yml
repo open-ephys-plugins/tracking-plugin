@@ -34,7 +34,7 @@ jobs:
         cd plugin-GUI/Build
         cmake -G "Visual Studio 17 2022" -A x64 .. 
         mkdir Release && cd Release
-        curl -L https://openephysgui.jfrog.io/artifactory/Libraries/open-ephys-lib-$GUI_LIB_VERSION.zip --output open-ephys-lib.zip 
+        curl -L https://openephys.jfrog.io/artifactory/GUI-binaries/Libraries/open-ephys-lib-$GUI_LIB_VERSION.zip --output open-ephys-lib.zip
         unzip open-ephys-lib.zip
       shell: bash
     - name: configure
@@ -55,9 +55,9 @@ jobs:
     - name: deploy
       if: github.ref == 'refs/heads/testing-juce8'
       env:
-        artifactoryApiKey: ${{ secrets.artifactoryApiKey }}
+        ARTIFACTORY_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
         build_dir: "Build/Release"
-        package: Tracking-windows
+        package: TrackingPlugin-windows
       run: |
         plugin_api=$(grep -rnw ../../plugin-GUI/Source -e '#define PLUGIN_API_VER' | grep -Eo "[0-9]*" | tail -1)
         tag=$(grep -w Source/OpenEphysLib.cpp -e 'info->libVersion' | grep -Eo "[0-9]+.[0-9]+.[0-9]+")
@@ -66,5 +66,5 @@ jobs:
         cp $build_dir/*.dll plugins
         zipfile=${package}_${new_plugin_ver}.zip
         powershell Compress-Archive -Path "plugins" -DestinationPath ${zipfile}
-        curl -H "X-JFrog-Art-Api:$artifactoryApiKey" -T $zipfile "https://openephys.jfrog.io/artifactory/Tracking-plugin/windows/$zipfile"
+        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/TrackingPlugin-plugin/windows/$zipfile"
       shell: bash
