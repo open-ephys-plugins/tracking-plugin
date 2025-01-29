@@ -21,7 +21,7 @@ Documentation related to the Tracking Plugin user interface and the required Bon
 
 First, follow the instructions on [this page](https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-the-GUI.html) to build the Open Ephys GUI.
 
-**Important:** This plugin is intended for use with the latest version of the GUI, `0.6.x`. For a version that works with `0.5.x`, please use the code on the `archive` branch.
+**Important:** This plugin is intended for use with the latest preview version of the GUI, `1.0.0` (branch=testing-juce8). For a version that works with `v0.6.x`, please use the code on the `main` branch.
 
 Then, clone this repository into a directory at the same level as the `plugin-GUI`, e.g.:
  
