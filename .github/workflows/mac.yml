@@ -106,4 +106,4 @@ jobs:
 
         zipfile=${package}_${new_plugin_ver}.zip
         /usr/bin/ditto -c -k --sequesterRsrc --keepParent plugins $zipfile
-        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/TrackingPlugin-plugin/mac/$zipfile"
+        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/Tracking-plugin/mac/$zipfile"

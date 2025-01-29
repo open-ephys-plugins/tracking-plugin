@@ -52,4 +52,4 @@ jobs:
         cp -r $build_dir/*.so plugins
         zipfile=${package}_${new_plugin_ver}.zip
         zip -r -X $zipfile plugins
-        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/TrackingPlugin-plugin/linux/$zipfile"
+        curl -H "X-JFrog-Art-Api:$ARTIFACTORY_ACCESS_TOKEN" -T $zipfile "https://openephys.jfrog.io/artifactory/Tracking-plugin/linux/$zipfile"
